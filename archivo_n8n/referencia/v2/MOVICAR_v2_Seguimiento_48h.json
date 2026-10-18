@@ -1,0 +1,114 @@
+{
+  "name": "MOVICAR · Seguimiento de cotizaciones 48 h (v2)",
+  "nodes": [
+    {
+      "id": "11107c21-dd8f-429b-83c4-4f9abb57ecad",
+      "name": "Cada hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1a40e484-160e-4dfa-b762-0cce17a97105",
+      "name": "Marcar cotizaciones sin respuesta (48 h)",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "hWU5zjO0cdhx8CnJ",
+          "cachedResultName": "movicar_solicitudes"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "estado",
+              "condition": "eq",
+              "keyValue": "cotizada"
+            },
+            {
+              "keyName": "updatedAt",
+              "condition": "lt",
+              "keyValue": "={{ $now.minus(48, \"hours\").toISO() }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "estado": "sin_confirmar_seguimiento"
+          },
+          "schema": [
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "0be878c9-d50e-4a7c-aad2-f48e10d10b66",
+      "name": "Sticky Note 788c44fb",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -300
+      ],
+      "parameters": {
+        "content": "## Temporizador «48 h sin respuesta» (BPMN TO-BE)\nCada hora marca las cotizaciones sin confirmar por más de 48 h para que Recepción haga el seguimiento.",
+        "color": 6,
+        "width": 560,
+        "height": 240
+      }
+    }
+  ],
+  "connections": {
+    "Cada hora": {
+      "main": [
+        [
+          {
+            "node": "Marcar cotizaciones sin respuesta (48 h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

@@ -1,0 +1,230 @@
+{
+  "name": "MOVICAR · Bandeja del jefe de taller (v2)",
+  "nodes": [
+    {
+      "id": "d5750d92-5475-4cd5-8bfb-69d4c9c2bfda",
+      "name": "Jefe de taller valida el diagnóstico",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "formTitle": "MOVICAR · Bandeja del jefe de taller",
+        "formDescription": "Valide el diagnóstico de un caso que el Agente Orquestador dejó en estado «revision_jefe». Revise la tabla movicar_solicitudes para ver la descripción del cliente.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "placa",
+              "placeholder": "BXR-742",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "tipo_servicio",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "correctivo"
+                  },
+                  {
+                    "option": "preventivo"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "prioridad",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "normal"
+                  },
+                  {
+                    "option": "alta"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "especialidad",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "general"
+                  },
+                  {
+                    "option": "motor_electrico"
+                  },
+                  {
+                    "option": "frenos_suspension"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "observacion",
+              "fieldType": "textarea",
+              "placeholder": "Ej.: cambiar pastillas delanteras y rectificar discos",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false,
+          "respondWithOptions": {
+            "values": {
+              "formSubmittedText": "Diagnóstico validado. El asistente continuará con la cotización cuando el cliente vuelva a escribir."
+            }
+          }
+        }
+      },
+      "webhookId": "3cd1d631-4e9e-43c0-a385-095b5c2e9227"
+    },
+    {
+      "id": "bb0e34f1-5884-4aac-aeaa-58bec27b3df6",
+      "name": "Marcar la solicitud como validada",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "hWU5zjO0cdhx8CnJ",
+          "cachedResultName": "movicar_solicitudes"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "placa",
+              "condition": "eq",
+              "keyValue": "={{ $json.placa.trim().toUpperCase() }}"
+            },
+            {
+              "keyName": "estado",
+              "condition": "eq",
+              "keyValue": "revision_jefe"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "estado": "validada_jefe",
+            "validado_por": "jefe_taller",
+            "tipo_servicio": "={{ $json.tipo_servicio }}",
+            "prioridad": "={{ $json.prioridad }}",
+            "especialidad": "={{ $json.especialidad }}",
+            "observacion_jefe": "={{ $json.observacion }}"
+          },
+          "schema": [
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "validado_por",
+              "displayName": "validado_por",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo_servicio",
+              "displayName": "tipo_servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prioridad",
+              "displayName": "prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "especialidad",
+              "displayName": "especialidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion_jefe",
+              "displayName": "observacion_jefe",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "43c26e46-2291-40b0-9775-cb005a4db36e",
+      "name": "Sticky Note 7dfc2610",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        -320
+      ],
+      "parameters": {
+        "content": "## Humano en el bucle (asíncrono)\nEl orquestador deja el caso en **revision_jefe** y responde al cliente. El jefe valida aquí; la fila pasa a **validada_jefe** y, cuando el cliente escribe de nuevo, el orquestador la consulta y continúa con la cotización. Sin nodos Wait ni ejecuciones en pausa.",
+        "color": 5,
+        "width": 560,
+        "height": 260
+      }
+    }
+  ],
+  "connections": {
+    "Jefe de taller valida el diagnóstico": {
+      "main": [
+        [
+          {
+            "node": "Marcar la solicitud como validada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

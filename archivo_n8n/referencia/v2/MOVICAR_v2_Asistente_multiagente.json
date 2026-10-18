@@ -1,0 +1,707 @@
+{
+  "name": "MOVICAR · Asistente multiagente de cotizaciones y citas (v2)",
+  "nodes": [
+    {
+      "id": "9b28c99b-50d5-4cf7-9f61-4bf76fe67945",
+      "name": "Mensaje del cliente recibido",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "public": true,
+        "mode": "hostedChat",
+        "authentication": "none",
+        "initialMessages": "¡Hola! 👋 Soy el asistente virtual de MOVICAR Taller Mecánico.\nCuéntame qué servicio necesita tu vehículo y te envío la cotización y los turnos disponibles.",
+        "options": {
+          "responseMode": "lastNode",
+          "title": "MOVICAR Taller Mecánico",
+          "subtitle": "Cotizaciones y citas (simulación del canal WhatsApp)",
+          "inputPlaceholder": "Escribe tu mensaje..."
+        }
+      },
+      "webhookId": "09e49835-e998-4e2c-9c23-492acb533f47"
+    },
+    {
+      "id": "9eb5ea0f-94c4-4569-8653-e71593ff3f56",
+      "name": "Agente Orquestador (Recepcionista IA)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "promptType": "auto",
+        "options": {
+          "systemMessage": "=Eres el Agente Orquestador de MOVICAR Taller Mecánico (Trujillo, Perú). Atiendes por WhatsApp a clientes que piden cotización de mantenimiento o reparación y un turno. Coordinas a dos subagentes y a tus herramientas; eres responsable de todo el proceso.\nFecha y hora actual (Lima): {{ $now.setZone(\"America/Lima\").toFormat(\"cccc yyyy-MM-dd HH:mm\", { locale: \"es\" }) }}.\n\nDATOS QUE NECESITAS: telefono, placa, vehiculo (marca, modelo y año), descripcion_falla (servicio o síntoma), fecha_deseada (convierte \"mañana\", \"el lunes 12\" a AAAA-MM-DD; domingo no se atiende) y kilometraje (opcional, 0 si no lo sabe).\nCLASIFICACIÓN: \"preventivo\" = mantenimiento programado, aceite, filtros, afinamiento sin síntomas; \"correctivo\" = hay un síntoma o falla. Estima tu confianza de 0 a 1.\n\nPROCESO (síguelo en cada mensaje):\n1. Si faltan datos obligatorios (telefono, placa, vehiculo, descripcion_falla o fecha_deseada), pide SOLO los que faltan, en un único mensaje breve. No pidas el kilometraje.\n2. Cuando tengas los cinco datos obligatorios, llama SIEMPRE validar_solicitud, aunque algún dato parezca incorrecto: no valides formatos ni fechas por tu cuenta; la herramienta es la única que decide. Si valido=false, explica al cliente TODOS los errores que devolvió y pide los datos corregidos. Guarda mentalmente la clave y usa siempre los datos normalizados.\n3. Llama consultar_solicitud con la clave antes de hacer cualquier otra cosa:\n   - estado \"agendada\": la solicitud ya existe; recuérdale su cita (turno_confirmado). No crees nada nuevo.\n   - estado \"cotizada\": la cotización ya existe; si el cliente elige un turno, ve al paso 7; si no, recuérdale el total y los turnos_propuestos.\n   - estado \"revision_jefe\": el jefe de taller aún no valida; díselo con amabilidad.\n   - estado \"validada_jefe\": el jefe ya validó; continúa en el paso 5 usando su tipo_servicio, prioridad, especialidad y observacion_jefe.\n   - sin resultados: la solicitud NO está registrada (aunque en la conversación parezca que sí); trátala como nueva y sigue en el paso 4.\n4. Si es correctivo o tu confianza es menor que 0.9: llama OBLIGATORIAMENTE guardar_solicitud con estado \"revision_jefe\", validado_por \"agente_ia\" y prioridad/especialidad sugeridas; responde que el jefe de taller validará el diagnóstico y que puede escribir \"estado\" en unos minutos. Si es preventivo con confianza ≥ 0.9: especialidad \"general\", prioridad \"normal\", validado_por \"agente_ia\" y sigue al paso 5.\n5. Llama a agente_cotizador (vehículo, km, tipo, servicio, especialidad, indicación del jefe). Cuando responda, llama a agente_agenda (PROPONER con especialidad, prioridad y fecha deseada).\n6. Llama guardar_solicitud con estado \"cotizada\", total_cotizacion, cotizacion_detalle (JSON de items) y turnos_propuestos (JSON de turnos). Responde con la cotización en Markdown: una línea por concepto con su subtotal, el **total referencial** (sujeto a revisión en taller), aviso si hay repuestos bajo pedido, y los 3 turnos numerados 1, 2 y 3, cada uno con día de la semana, fecha, hora y mecánico; pide que elija uno o que pida otra fecha.\n7. Si el cliente elige un turno: llama agente_agenda (RESERVAR con turno_id y clave). Si se reservó, llama guardar_solicitud con estado \"agendada\" y turno_confirmado, y confirma la cita con los requisitos de ingreso (llegar 10 minutos antes, traer la tarjeta de propiedad, la cotización es referencial). Si no se reservó, ofrece las alternativas.\n8. Si pide otra fecha: agente_agenda (PROPONER con la nueva fecha), actualiza turnos_propuestos con guardar_solicitud y preséntalos numerados con el mismo formato (día de la semana, fecha, hora y mecánico).\n9. Si no desea continuar: guardar_solicitud con estado \"rechazada\" y despídete.\n\nREGLAS: la tabla es la única fuente de verdad: nunca digas que registraste, derivaste, cotizaste o reservaste algo si en ESTE mensaje no llamaste la herramienta correspondiente y te devolvió la fila. Llama UNA sola herramienta por turno y espera su respuesta antes de llamar a la siguiente (nunca llamadas en paralelo). guardar_solicitud reemplaza la fila; envía siempre TODOS los campos con sus valores vigentes (los que obtuviste de consultar_solicitud o de los subagentes). Nunca inventes precios, totales ni turnos: usa solo lo que devuelven los subagentes. Escribe en español, breve y amable.",
+          "maxIterations": 12,
+          "enableStreaming": false
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "5b441249-4aca-4e2a-bcd0-51408de7a5d7",
+      "name": "Gemini 2.5 Flash (compartido)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        -60,
+        380
+      ],
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      }
+    },
+    {
+      "id": "5abd4ed5-95b6-485b-81e2-8066bee1a7ed",
+      "name": "Memoria de la conversación",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [
+        120,
+        380
+      ],
+      "parameters": {
+        "sessionIdType": "fromInput",
+        "contextWindowLength": 20
+      }
+    },
+    {
+      "id": "cebfa37c-e33e-496e-bd29-5a0acbc9d4fa",
+      "name": "validar_solicitud",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        300,
+        380
+      ],
+      "parameters": {
+        "description": "Valida y normaliza los datos del cliente contra el contrato de entrada del Laboratorio 02 y calcula la clave de idempotencia. Llámala cuando tengas todos los datos. Devuelve {valido, errores, datos normalizados, clave}.",
+        "language": "javaScript",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"telefono\": {\n      \"type\": \"string\",\n      \"description\": \"Celular del cliente\"\n    },\n    \"placa\": {\n      \"type\": \"string\"\n    },\n    \"vehiculo\": {\n      \"type\": \"string\",\n      \"description\": \"Marca, modelo y año\"\n    },\n    \"kilometraje\": {\n      \"type\": \"number\",\n      \"description\": \"0 si no lo sabe\"\n    },\n    \"tipo_servicio\": {\n      \"type\": \"string\",\n      \"description\": \"preventivo o correctivo\"\n    },\n    \"fecha_deseada\": {\n      \"type\": \"string\",\n      \"description\": \"AAAA-MM-DD\"\n    },\n    \"descripcion_falla\": {\n      \"type\": \"string\"\n    }\n  },\n  \"required\": [\n    \"telefono\",\n    \"placa\",\n    \"vehiculo\",\n    \"kilometraje\",\n    \"tipo_servicio\",\n    \"fecha_deseada\",\n    \"descripcion_falla\"\n  ]\n}",
+        "jsCode": "// Contrato de entrada (Lab 02) + clave de idempotencia (hash polinomial determinista).\nlet q = query;\nif (typeof q === 'string') { try { q = JSON.parse(q); } catch (e) { q = {}; } }\nq = q || {};\nconst errores = [];\nconst hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Lima' });\n\nlet tel = String(q.telefono || '').replace(/[\\s\\-()]/g, '');\nif (/^9\\d{8}$/.test(tel)) tel = '+51' + tel;\nif (/^51\\d{9}$/.test(tel)) tel = '+' + tel;\nif (!/^\\+\\d{10,15}$/.test(tel)) errores.push('telefono: se necesita un celular válido (ej. 987 654 321)');\n\nlet placa = String(q.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');\nif (!/^[A-Z0-9]{6,7}$/.test(placa)) errores.push('placa: debe tener 6 a 7 caracteres (ej. ABC-123)');\nelse placa = placa.slice(0, 3) + '-' + placa.slice(3);\n\nconst vehiculo = String(q.vehiculo || '').trim();\nif (!vehiculo) errores.push('vehiculo: falta marca, modelo y año');\n\nconst tipo = String(q.tipo_servicio || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').trim();\nif (!['preventivo', 'correctivo'].includes(tipo)) errores.push('tipo_servicio: debe ser preventivo o correctivo');\n\nconst fecha = String(q.fecha_deseada || '').trim().slice(0, 10);\nif (!/^\\d{4}-\\d{2}-\\d{2}$/.test(fecha)) errores.push('fecha_deseada: falta una fecha válida (AAAA-MM-DD)');\nelse if (fecha < hoy) errores.push('fecha_deseada: no puede ser anterior a hoy (' + hoy + ')');\n\nconst desc = String(q.descripcion_falla || '').trim();\nif (!desc) errores.push('descripcion_falla: falta el servicio o síntoma');\nif (desc.length > 500) errores.push('descripcion_falla: máximo 500 caracteres');\n\nlet km = Number(q.kilometraje);\nif (!Number.isFinite(km) || km < 0) km = 0;\n\n// Clave de negocio: teléfono | placa | servicio | fecha (sin marcas de tiempo ni IDs de plataforma)\nconst material = [tel, placa, tipo, fecha].join('|').toLowerCase();\nlet h1 = 0xdeadbeef, h2 = 0x41c6ce57;\nfor (let i = 0; i < material.length; i++) {\n  const ch = material.charCodeAt(i);\n  h1 = Math.imul(h1 ^ ch, 2654435761);\n  h2 = Math.imul(h2 ^ ch, 1597334677);\n}\nh1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);\nh2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);\nconst clave = 'MV-' + (h2 >>> 0).toString(16).padStart(8, '0') + (h1 >>> 0).toString(16).padStart(8, '0');\n\nreturn JSON.stringify({\n  valido: errores.length === 0,\n  errores,\n  clave: errores.length === 0 ? clave : '',\n  datos: { telefono: tel, placa, vehiculo, kilometraje: Math.round(km), tipo_servicio: tipo, fecha_deseada: fecha, descripcion_falla: desc }\n});"
+      }
+    },
+    {
+      "id": "d77833a0-c237-43b3-8956-112f84f9fc38",
+      "name": "consultar_solicitud",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        380
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "hWU5zjO0cdhx8CnJ",
+          "cachedResultName": "movicar_solicitudes"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "clave",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('clave', 'Clave de idempotencia devuelta por validar_solicitud') }}"
+            }
+          ]
+        },
+        "returnAll": false,
+        "limit": 1
+      }
+    },
+    {
+      "id": "ea1d2f59-e649-4a93-8e5b-6638a5d81384",
+      "name": "guardar_solicitud",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        380
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "hWU5zjO0cdhx8CnJ",
+          "cachedResultName": "movicar_solicitudes"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "clave",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('clave', 'Clave de idempotencia de la solicitud') }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "clave": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('clave', 'Clave de idempotencia de la solicitud') }}",
+            "session_id": "={{ $(\"Mensaje del cliente recibido\").item.json.sessionId }}",
+            "telefono": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('telefono', 'Teléfono normalizado') }}",
+            "placa": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('placa', 'Placa normalizada') }}",
+            "vehiculo": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('vehiculo', 'Marca, modelo y año') }}",
+            "kilometraje": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('kilometraje', 'Kilometraje (0 si no se sabe)', 'number') }}",
+            "tipo_servicio": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('tipo_servicio', 'preventivo o correctivo') }}",
+            "confianza": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('confianza', 'Confianza de la clasificación (0 a 1)', 'number') }}",
+            "prioridad": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('prioridad', 'normal o alta') }}",
+            "especialidad": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('especialidad', 'general, motor_electrico o frenos_suspension') }}",
+            "fecha_deseada": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fecha_deseada', 'AAAA-MM-DD') }}",
+            "descripcion_falla": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('descripcion_falla', 'Servicio o síntoma') }}",
+            "observacion_jefe": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('observacion_jefe', 'Indicación del jefe de taller; vacío si no hay') }}",
+            "validado_por": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('validado_por', 'agente_ia o jefe_taller') }}",
+            "total_cotizacion": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('total_cotizacion', 'Total en soles; 0 si aún no hay cotización', 'number') }}",
+            "cotizacion_detalle": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('cotizacion_detalle', 'Detalle de la cotización en JSON; vacío si no hay') }}",
+            "turnos_propuestos": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('turnos_propuestos', 'Turnos propuestos en JSON; vacío si no hay') }}",
+            "turno_confirmado": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('turno_confirmado', 'Turno reservado; vacío si no hay') }}",
+            "estado": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('estado', 'revision_jefe, cotizada, agendada o rechazada') }}"
+          },
+          "schema": [
+            {
+              "id": "clave",
+              "displayName": "clave",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "session_id",
+              "displayName": "session_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "placa",
+              "displayName": "placa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vehiculo",
+              "displayName": "vehiculo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "kilometraje",
+              "displayName": "kilometraje",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo_servicio",
+              "displayName": "tipo_servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "confianza",
+              "displayName": "confianza",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "prioridad",
+              "displayName": "prioridad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "especialidad",
+              "displayName": "especialidad",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "fecha_deseada",
+              "displayName": "fecha_deseada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "descripcion_falla",
+              "displayName": "descripcion_falla",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "observacion_jefe",
+              "displayName": "observacion_jefe",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "validado_por",
+              "displayName": "validado_por",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_cotizacion",
+              "displayName": "total_cotizacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cotizacion_detalle",
+              "displayName": "cotizacion_detalle",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "turnos_propuestos",
+              "displayName": "turnos_propuestos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "turno_confirmado",
+              "displayName": "turno_confirmado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1d042484-16a8-4880-9a19-e5e8a4528b57",
+      "name": "agente_cotizador",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        900,
+        380
+      ],
+      "parameters": {
+        "toolDescription": "Agente Cotizador IA. Recibe la descripción del vehículo y del servicio y devuelve la cotización calculada (conceptos, subtotales, total y repuestos bajo pedido).",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('pedido', 'Vehículo, kilometraje, tipo de servicio, servicio o síntoma, especialidad e indicación del jefe de taller si existe') }}",
+        "options": {
+          "systemMessage": "Eres el Agente Cotizador de MOVICAR Taller Mecánico.\n1. Usa consultar_catalogo para leer el catálogo (MO-* = mano de obra, REP-* = repuestos; la columna aplica_a indica cuándo se usa y qué repuestos requiere).\n2. Elige solo códigos existentes:\n   - Preventivo: si el cliente indica el mantenimiento (5 000, 10 000 o 50 000 km) úsalo; si no, por kilometraje (múltiplos de 50 000 km → MO-PREV-50K; solo aceite → MO-PREV-5K; en otro caso → MO-PREV-10K).\n   - Correctivo: la mano de obra del síntoma; agrega MO-DIAG si la causa no es evidente. Considera la indicación del jefe de taller.\n   - Agrega los repuestos que requiere cada mano de obra, con su cantidad.\n3. Llama a calcular_cotizacion con codigo, concepto, tipo, cantidad, precio_unitario y stock tal como figuran en el catálogo. Nunca calcules tú los montos.\n4. Responde SOLO con el JSON que devuelve calcular_cotizacion.",
+          "maxIterations": 6,
+          "enableStreaming": false
+        }
+      }
+    },
+    {
+      "id": "95eeaeec-6e40-4bb4-a35f-85973d3d2f52",
+      "name": "consultar_catalogo",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        820,
+        640
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "auhXAzNTpOEf6ruX",
+          "cachedResultName": "movicar_catalogo_servicios"
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "dbdfacb5-87cb-4cf4-a652-2d2ecac7c524",
+      "name": "calcular_cotizacion",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        1000,
+        640
+      ],
+      "parameters": {
+        "description": "Calcula subtotales y total de la cotización con aritmética exacta y marca los repuestos sin stock. Recibe los conceptos elegidos con el precio y stock que figuran en el catálogo.",
+        "language": "javaScript",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"items\": {\n      \"type\": \"array\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"codigo\": {\n            \"type\": \"string\"\n          },\n          \"concepto\": {\n            \"type\": \"string\"\n          },\n          \"tipo\": {\n            \"type\": \"string\",\n            \"description\": \"mano_obra o repuesto\"\n          },\n          \"cantidad\": {\n            \"type\": \"number\"\n          },\n          \"precio_unitario\": {\n            \"type\": \"number\"\n          },\n          \"stock\": {\n            \"type\": \"number\"\n          }\n        },\n        \"required\": [\n          \"codigo\",\n          \"concepto\",\n          \"tipo\",\n          \"cantidad\",\n          \"precio_unitario\",\n          \"stock\"\n        ]\n      }\n    }\n  },\n  \"required\": [\n    \"items\"\n  ]\n}",
+        "jsCode": "// Aritmética determinista: el LLM elige conceptos, este código calcula.\nlet q = query;\nif (typeof q === 'string') { try { q = JSON.parse(q); } catch (e) { q = {}; } }\nconst items = ((q && q.items) || []).map(i => {\n  const cantidad = Math.max(1, Math.round(Number(i.cantidad) || 1));\n  const precio = Number(i.precio_unitario) || 0;\n  return {\n    codigo: i.codigo, concepto: i.concepto, tipo: i.tipo, cantidad, precio_unitario: precio,\n    subtotal: Math.round(cantidad * precio * 100) / 100,\n    bajo_pedido: i.tipo === 'repuesto' && Number(i.stock) < cantidad\n  };\n});\nconst total = Math.round(items.reduce((s, i) => s + i.subtotal, 0) * 100) / 100;\nreturn JSON.stringify({ items, total, repuestos_bajo_pedido: items.filter(i => i.bajo_pedido).map(i => i.concepto) });"
+      }
+    },
+    {
+      "id": "a85b0cdd-18f7-4da1-868d-5b8108183e73",
+      "name": "agente_agenda",
+      "type": "@n8n/n8n-nodes-langchain.agentTool",
+      "typeVersion": 3,
+      "position": [
+        1260,
+        380
+      ],
+      "parameters": {
+        "toolDescription": "Agente de Agenda IA. Dos tareas: (a) PROPONER 3 turnos libres según especialidad, prioridad y fecha deseada; (b) RESERVAR un turno_id para una clave de solicitud. Devuelve JSON.",
+        "text": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('instruccion', 'Tarea PROPONER (especialidad, prioridad y fecha deseada AAAA-MM-DD) o RESERVAR (turno_id y clave)') }}",
+        "options": {
+          "systemMessage": "=Eres el Agente de Agenda de MOVICAR Taller Mecánico. Fecha actual: {{ $now.setZone(\"America/Lima\").toFormat(\"yyyy-MM-dd (cccc)\") }}. No se atiende los domingos.\nPROPONER: usa consultar_turnos_libres con la especialidad indicada y fecha_desde = fecha deseada; la herramienta solo devuelve turnos libres desde esa fecha. Elige exactamente 3 turnos en orden cronológico empezando por la fecha deseada, en días u horas distintos. Si devuelve menos de 3, vuelve a consultar con fecha_desde = mañana y completa con los turnos más cercanos a la fecha deseada. Responde {\"turnos\":[{\"turno_id\",\"fecha\",\"hora\",\"mecanico\"}]} copiando los valores exactos.\nRESERVAR: usa reservar_turno con el turno_id y la clave. Si la herramienta devuelve la fila actualizada, responde {\"reservado\":true,\"turno\":{\"turno_id\",\"fecha\",\"hora\",\"mecanico\"}}; si no devuelve filas, el turno ya no está libre: responde {\"reservado\":false} y propón 3 alternativas con consultar_turnos_libres.\nNunca inventes turnos. Responde solo con JSON.",
+          "maxIterations": 6,
+          "enableStreaming": false
+        }
+      }
+    },
+    {
+      "id": "37dafe73-2ed9-4657-ab6f-a7d9174e5136",
+      "name": "consultar_turnos_libres",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1180,
+        640
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PwIVSr8fb316dkEQ",
+          "cachedResultName": "movicar_agenda_turnos"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "especialidad",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('especialidad', 'general, motor_electrico o frenos_suspension') }}"
+            },
+            {
+              "keyName": "estado",
+              "condition": "eq",
+              "keyValue": "libre"
+            },
+            {
+              "keyName": "fecha",
+              "condition": "gte",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('fecha_desde', 'Fecha mínima AAAA-MM-DD desde la que se buscan turnos (normalmente la fecha deseada)') }}"
+            }
+          ]
+        },
+        "returnAll": true
+      }
+    },
+    {
+      "id": "a5640c57-41f5-4a00-a1cc-8a00bf2a472a",
+      "name": "reservar_turno",
+      "type": "n8n-nodes-base.dataTableTool",
+      "typeVersion": 1.1,
+      "position": [
+        1360,
+        640
+      ],
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PwIVSr8fb316dkEQ",
+          "cachedResultName": "movicar_agenda_turnos"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "turno_id",
+              "condition": "eq",
+              "keyValue": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('turno_id', 'turno_id exacto a reservar') }}"
+            },
+            {
+              "keyName": "estado",
+              "condition": "eq",
+              "keyValue": "libre"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "estado": "reservado",
+            "clave_solicitud": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('clave_solicitud', 'Clave de la solicitud del cliente') }}"
+          },
+          "schema": [
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "clave_solicitud",
+              "displayName": "clave_solicitud",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "aeceb665-8e1f-4dd5-be7e-0678f454a6ec",
+      "name": "Sticky Note 8963cc2c",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -140,
+        -380
+      ],
+      "parameters": {
+        "content": "## MOVICAR · Asistente multiagente (v2)\nPatrón **supervisor**: el Agente Orquestador conversa, razona el proceso y delega en dos **subagentes-herramienta** (Cotizador y Agenda), que consultan sus tablas por sí mismos.\n\n- Contrato e idempotencia: herramienta de código validar_solicitud.\n- Persistencia idempotente: guardar_solicitud (upsert por clave).\n- Precios: el Cotizador elige conceptos y calcular_cotizacion hace la aritmética.\n- Un solo modelo Gemini compartido por los tres agentes.",
+        "color": 4,
+        "width": 900,
+        "height": 300
+      }
+    }
+  ],
+  "connections": {
+    "Mensaje del cliente recibido": {
+      "main": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2.5 Flash (compartido)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "agente_cotizador",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "agente_agenda",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memoria de la conversación": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "validar_solicitud": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_solicitud": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "guardar_solicitud": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agente_cotizador": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_catalogo": {
+      "ai_tool": [
+        [
+          {
+            "node": "agente_cotizador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calcular_cotizacion": {
+      "ai_tool": [
+        [
+          {
+            "node": "agente_cotizador",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "agente_agenda": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente Orquestador (Recepcionista IA)",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_turnos_libres": {
+      "ai_tool": [
+        [
+          {
+            "node": "agente_agenda",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "reservar_turno": {
+      "ai_tool": [
+        [
+          {
+            "node": "agente_agenda",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "errorWorkflow": "Q4JnrwIJi4yFDZW1",
+    "timezone": "America/Lima",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

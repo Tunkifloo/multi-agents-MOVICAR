@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+tests/resultados/
+__pycache__/
+*.pyc
+.venv/
+backend/data/
+frontend/node_modules/
+frontend/dist/
+.pytest_cache/
+desktop.ini
+.impeccable/

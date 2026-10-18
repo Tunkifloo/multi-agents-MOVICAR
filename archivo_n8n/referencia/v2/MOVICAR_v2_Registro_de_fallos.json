@@ -1,0 +1,150 @@
+{
+  "name": "MOVICAR · Registro de fallos (v2)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "894a9678-2ff8-4bdc-be3c-4577bc7be6c0",
+      "name": "Fallo en el asistente",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Z4Ee5g2ScIIdhHJC",
+          "cachedResultName": "movicar_cola_fallidos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "momento": "={{ $now.setZone(\"America/Lima\").toISO() }}",
+            "flujo": "={{ $json.workflow.name }}",
+            "ejecucion": "={{ $json.execution.id }}",
+            "clase_error": "={{ /timeout|ETIMEDOUT|ECONNRESET|503|502|429|rate|overloaded/i.test($json.execution.error?.message || \"\") ? \"transitorio\" : (/credential|auth|401|403|quota|token|bad request|400|404|not found|model/i.test($json.execution.error?.message || \"\") ? \"de_sistema\" : \"de_datos\") }}",
+            "motivo": "=Falló el nodo \"{{ $json.execution.lastNodeExecuted }}\": {{ $json.execution.error?.message || \"error sin mensaje\" }}",
+            "carga_original": "={{ JSON.stringify({ url_ejecucion: $json.execution.url, modo: $json.execution.mode, flujo_id: $json.workflow.id }) }}",
+            "intentos": 2
+          },
+          "schema": [
+            {
+              "id": "momento",
+              "displayName": "momento",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "flujo",
+              "displayName": "flujo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ejecucion",
+              "displayName": "ejecucion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "clase_error",
+              "displayName": "clase_error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "carga_original",
+              "displayName": "carga_original",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "intentos",
+              "displayName": "intentos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7440fbfd-f0de-484e-9106-939a764d594c",
+      "name": "Registrar en la cola de fallidos",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        288,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Cola de fallidos (6 campos)\nSe ejecuta cuando el asistente falla en producción (después de los reintentos del agente). Clasifica el error y lo registra en una sola escritura.",
+        "height": 176,
+        "width": 304,
+        "color": 3
+      },
+      "id": "49e9939d-bf63-4b75-94cf-83dd4f15d808",
+      "name": "Sticky Note 49dbbd4c",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        48,
+        288
+      ]
+    }
+  ],
+  "connections": {
+    "Fallo en el asistente": {
+      "main": [
+        [
+          {
+            "node": "Registrar en la cola de fallidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

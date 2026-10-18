@@ -1,0 +1,23 @@
+codigo,concepto,tipo,categoria,especialidad,precio,stock,horas,aplica_a
+MO-PREV-5K,Mantenimiento preventivo 5 000 km (cambio de aceite y filtro),mano_obra,preventivo,general,60,0,1,Mantenimiento cada 5 000 km; requiere REP-ACE-5W30 y REP-FILT-ACE
+MO-PREV-10K,"Mantenimiento preventivo 10 000 km (aceite, filtros, revisión de niveles y frenos)",mano_obra,preventivo,general,120,0,2,"Mantenimiento cada 10 000 km; requiere REP-ACE-5W30, REP-FILT-ACE, REP-FILT-AIRE"
+MO-PREV-50K,"Mantenimiento preventivo mayor 50 000 km (afinamiento, bujías, filtros, líquidos)",mano_obra,preventivo,general,250,0,4,"Mantenimiento mayor; requiere aceite, filtros, 4 bujías, líquido de frenos y refrigerante"
+MO-DIAG,Diagnóstico computarizado con escáner,mano_obra,correctivo,motor_electrico,80,0,1,"Toda falla de motor, luces de tablero, pérdida de potencia, se apaga"
+MO-FRENOS,Cambio de pastillas de freno (por eje),mano_obra,correctivo,frenos_suspension,70,0,1.5,"Ruido o chillido al frenar, pedal esponjoso"
+MO-RECT,Rectificado de discos de freno (par),mano_obra,correctivo,frenos_suspension,90,0,1.5,Vibración al frenar
+MO-SUSP,Cambio de amortiguadores (par),mano_obra,correctivo,frenos_suspension,150,0,3,"Golpeteo en baches, auto rebota, vibración en la dirección"
+MO-AFIN,Cambio de bujías y limpieza de inyectores,mano_obra,correctivo,motor_electrico,120,0,2,"Motor cascabelea, tironea, consumo alto de combustible"
+MO-EMBR,Cambio de kit de embrague,mano_obra,correctivo,motor_electrico,350,0,6,Embrague patina o cambios duros
+MO-ELEC,Revisión del sistema eléctrico y batería,mano_obra,correctivo,motor_electrico,60,0,1,"No arranca, batería se descarga, luces fallan"
+REP-ACE-5W30,Aceite sintético 5W-30 (galón 4 L),repuesto,preventivo,general,160,12,0,Mantenimientos preventivos
+REP-FILT-ACE,Filtro de aceite,repuesto,preventivo,general,30,20,0,Mantenimientos preventivos
+REP-FILT-AIRE,Filtro de aire de motor,repuesto,preventivo,general,45,10,0,Mantenimiento 10 000 km y mayor
+REP-FILT-CAB,Filtro de cabina (aire acondicionado),repuesto,preventivo,general,40,6,0,Mantenimiento mayor
+REP-BUJIA,Bujía de iridio (unidad),repuesto,preventivo,motor_electrico,45,16,0,Afinamiento; 4 unidades por motor de 4 cilindros
+REP-LIQ-FRENO,Líquido de frenos DOT4 (1 L),repuesto,preventivo,frenos_suspension,35,8,0,Mantenimiento mayor y cambio de frenos
+REP-REFRIG,Refrigerante de motor (galón),repuesto,preventivo,general,55,7,0,Mantenimiento mayor
+REP-PAST-DEL,Pastillas de freno delanteras (juego),repuesto,correctivo,frenos_suspension,140,5,0,Cambio de frenos delanteros
+REP-PAST-TRAS,Pastillas/zapatas de freno traseras (juego),repuesto,correctivo,frenos_suspension,120,0,0,Cambio de frenos traseros
+REP-AMORT,Amortiguador delantero (unidad),repuesto,correctivo,frenos_suspension,260,0,0,Cambio de amortiguadores; 2 unidades por eje
+REP-BATERIA,Batería 12 V 65 Ah,repuesto,correctivo,motor_electrico,380,3,0,Batería agotada
+REP-KIT-EMBR,"Kit de embrague (disco, prensa, collarín)",repuesto,correctivo,motor_electrico,690,0,0,Cambio de embrague

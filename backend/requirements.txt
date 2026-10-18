@@ -1,0 +1,17 @@
+# MOVICAR · backend multiagente (LangChain 1.x + LangGraph 1.x + Gemini)
+langchain==1.4.6
+langchain-core==1.6.12
+langgraph==1.2.16
+langgraph-checkpoint-sqlite==3.1.2
+langgraph-checkpoint-postgres==3.2.0
+langchain-google-genai==4.4.2
+fastapi==0.143.3
+uvicorn[standard]==0.54.0
+sqlalchemy==2.1.5
+psycopg[binary]==3.3.6
+psycopg-pool==3.3.3
+aiosqlite==0.22.1
+pydantic==2.14.1
+pydantic-settings==2.16.0
+apscheduler==3.11.3
+tzdata

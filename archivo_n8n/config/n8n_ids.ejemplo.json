@@ -1,0 +1,67 @@
+{
+  "_nota": "Copiar a config/n8n_ids.json. En data_tables poner el ID de las tablas *_v3 creadas en la fase 0 (la URL de cada tabla en n8n termina en su ID); las claves no cambian. Los IDs de workflows los completa n8n_deploy.py.",
+  "data_tables": {
+    "movicar_catalogo_servicios": "",
+    "movicar_agenda_turnos": "",
+    "movicar_solicitudes": "",
+    "movicar_cola_fallidos": ""
+  },
+  "workflows": {},
+  "orden_despliegue": [
+    {
+      "nombre": "MOVICAR · Registro de fallos",
+      "clave_wf": "registro_fallos",
+      "activar": true
+    },
+    {
+      "nombre": "sw_consultar_solicitud",
+      "clave_wf": "sw_consultar_solicitud"
+    },
+    {
+      "nombre": "sw_registrar_solicitud",
+      "clave_wf": "sw_registrar_solicitud"
+    },
+    {
+      "nombre": "sw_rechazar_solicitud",
+      "clave_wf": "sw_rechazar_solicitud"
+    },
+    {
+      "nombre": "sw_cotizar",
+      "clave_wf": "sw_cotizar"
+    },
+    {
+      "nombre": "sw_proponer_turnos",
+      "clave_wf": "sw_proponer_turnos"
+    },
+    {
+      "nombre": "sw_reservar_turno",
+      "clave_wf": "sw_reservar_turno"
+    },
+    {
+      "nombre": "MOVICAR · Asistente",
+      "clave_wf": "asistente",
+      "activar": true
+    },
+    {
+      "nombre": "MOVICAR · Pendientes del jefe",
+      "activar": true
+    },
+    {
+      "nombre": "MOVICAR · Bandeja del jefe",
+      "activar": true
+    },
+    {
+      "nombre": "MOVICAR · SLA revisión 2 h",
+      "activar": true
+    },
+    {
+      "nombre": "MOVICAR · Seguimiento 48 h",
+      "activar": true
+    },
+    {
+      "nombre": "MOVICAR · Utilidad de pruebas",
+      "clave_wf": "utilidad_pruebas",
+      "activar": true
+    }
+  ]
+}

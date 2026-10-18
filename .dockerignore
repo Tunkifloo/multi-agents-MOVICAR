@@ -1,0 +1,14 @@
+.env
+.env.*
+**/.venv
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
+backend/data
+backend/tests
+tests/resultados
+archivo_n8n
+docs
+.claude
+**/desktop.ini

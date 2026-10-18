@@ -1,0 +1,20 @@
+{
+  "_nota": "ELEMENTO PROTEGIDO. Cambiar solo con propuesta escrita, aprobación de Calidad (Johan) y re-ejecución de tests/escenarios.json. n8n_deploy.py inyecta estos valores en los nodos Code.",
+  "UMBRAL_CONFIANZA": 0.90,
+  "DIAS_MAX_ANTICIPACION": 60,
+  "SLA_REVISION_HORAS": 2,
+  "SEGUIMIENTO_HORAS": 48,
+  "estados_cotizables": ["lista_para_cotizar", "validada_jefe", "cotizada"],
+  "estados_reservables": ["cotizada", "sin_confirmar_seguimiento"],
+  "transiciones": {
+    "nueva": ["revision_jefe", "lista_para_cotizar"],
+    "revision_jefe": ["validada_jefe", "escalada_recepcion", "rechazada"],
+    "escalada_recepcion": ["validada_jefe", "rechazada"],
+    "lista_para_cotizar": ["cotizada", "rechazada"],
+    "validada_jefe": ["cotizada", "rechazada"],
+    "cotizada": ["cotizada", "agendada", "sin_confirmar_seguimiento", "rechazada"],
+    "sin_confirmar_seguimiento": ["cotizada", "agendada", "rechazada"],
+    "agendada": [],
+    "rechazada": []
+  }
+}

@@ -1,0 +1,23 @@
+codigo,concepto,tipo,categoria,especialidad,precio_unitario,stock,aplica_a
+MO-PREV-5K,Mantenimiento preventivo 5 000 km (cambio de aceite),mano_obra,preventivo,general,60,99,Solo cambio de aceite. Requiere REP-ACE-5W30 x1 y REP-FILT-ACE x1
+MO-PREV-10K,Mantenimiento preventivo 10 000 km (aceite y filtros),mano_obra,preventivo,general,150,99,Mantenimiento de 10 000 km o kilometraje no múltiplo de 50 000. Requiere REP-ACE-5W30 x1 REP-FILT-ACE x1 REP-FILT-AIRE x1
+MO-PREV-50K,Mantenimiento preventivo mayor 50 000 km,mano_obra,preventivo,general,380,99,Kilometraje múltiplo de 50 000. Requiere REP-ACE-5W30 x1 REP-FILT-ACE x1 REP-FILT-AIRE x1 REP-FILT-CAB x1 REP-BUJIA x4 REP-LIQ-FRENO x1 REP-REFRIG x1
+MO-DIAG,Diagnóstico computarizado con escáner,mano_obra,correctivo,motor_electrico,80,99,Cuando la causa no es evidente: check engine; se apaga; pierde potencia; luces del tablero
+MO-FRENOS,Cambio de pastillas de freno (por eje),mano_obra,correctivo,frenos_suspension,90,99,Chirrido o ruido metálico al frenar; pedal esponjoso. Requiere REP-PAST-DEL x1 (eje delantero) o REP-PAST-TRAS x1 (eje trasero) y REP-LIQ-FRENO x1
+MO-RECT,Rectificado de discos de freno (par),mano_obra,correctivo,frenos_suspension,120,99,Vibración del timón o del pedal al frenar
+MO-SUSP,Cambio de amortiguadores (par),mano_obra,correctivo,frenos_suspension,150,99,Golpeteo o ruido en la suspensión al pasar baches. Requiere REP-AMORT x2
+MO-AFIN,Cambio de bujías y limpieza de inyectores,mano_obra,correctivo,motor_electrico,140,99,Motor falla; tirones; consumo alto; arranque difícil. Requiere REP-BUJIA x4
+MO-EMBR,Cambio de kit de embrague,mano_obra,correctivo,motor_electrico,350,99,Embrague patina o pedal duro. Requiere REP-KIT-EMBR x1
+MO-ELEC,Revisión del sistema eléctrico y batería,mano_obra,correctivo,motor_electrico,70,99,No arranca; batería se descarga; fallas eléctricas
+REP-ACE-5W30,Aceite sintético 5W-30 (galón 4 L),repuesto,preventivo,general,130,20,Mantenimientos preventivos
+REP-FILT-ACE,Filtro de aceite,repuesto,preventivo,general,35,25,Mantenimientos preventivos
+REP-FILT-AIRE,Filtro de aire de motor,repuesto,preventivo,general,40,15,Mantenimientos de 10 000 y 50 000 km
+REP-FILT-CAB,Filtro de cabina (aire acondicionado),repuesto,preventivo,general,45,8,Mantenimiento de 50 000 km
+REP-BUJIA,Bujía de iridio (unidad),repuesto,preventivo,motor_electrico,45,12,MO-PREV-50K y MO-AFIN (x4)
+REP-LIQ-FRENO,Líquido de frenos DOT4 (1 L),repuesto,preventivo,frenos_suspension,35,10,MO-PREV-50K y MO-FRENOS
+REP-REFRIG,Refrigerante de motor (galón),repuesto,preventivo,general,45,10,MO-PREV-50K
+REP-PAST-DEL,Pastillas de freno delanteras (juego),repuesto,correctivo,frenos_suspension,140,4,MO-FRENOS eje delantero
+REP-PAST-TRAS,Pastillas/zapatas de freno traseras (juego),repuesto,correctivo,frenos_suspension,120,0,MO-FRENOS eje trasero (sin stock: bajo pedido)
+REP-AMORT,Amortiguador delantero (unidad),repuesto,correctivo,frenos_suspension,210,1,MO-SUSP (x2; stock 1 → bajo pedido)
+REP-DISCO,Disco de freno delantero (unidad),repuesto,correctivo,frenos_suspension,160,2,Cuando el disco está fuera de medida para rectificar
+REP-KIT-EMBR,Kit de embrague (disco y prensa),repuesto,correctivo,motor_electrico,520,0,MO-EMBR (sin stock: bajo pedido)
